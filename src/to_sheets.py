@@ -87,7 +87,7 @@ class ListUpdater:
                 bowielist = self.drive.CreateFile({'id': self.google_drive_list.id})
             else:
                 logger.info(f"Latest list already uploaded, exiting.")
-                exit(0)
+                return
         else:
             logger.info(f"Existing Google Drive file '{self.google_drive_filename}' not found, creating new from "
                         f"'{self.current_list.filename}'")
@@ -147,7 +147,7 @@ def get_google_drive_list(drive: GoogleDrive, google_drive_filename: str = 'bowi
     return gd_bowielist
 
 
-def get_current_list(url: str = 'http://ceruliz.nl/maarten/backup/') -> CurrentBowieList:  # noqa
+def get_current_list(url: str) -> CurrentBowieList:  # noqa
     """Get the current Bowie list as found online."""
     logger.debug(f"Retrieving latest list from {url}")
     df = pd.read_html(url)[0]
@@ -166,7 +166,7 @@ def main():
     drive = _google_drive_login()
 
     lu = ListUpdater(
-        current_list=get_current_list(),
+        current_list=get_current_list(url=os.getenv('LIST_LOCATION')),
         google_drive_list=get_google_drive_list(drive=drive),
         drive=drive
     )
