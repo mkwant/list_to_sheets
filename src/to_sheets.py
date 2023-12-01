@@ -63,14 +63,13 @@ class ListUpdater:
     google_drive_list: GoogleDriveBowieList
     current_list: CurrentBowieList
     drive: GoogleDrive
-    tempfile_name: str = 'tmpfile.xlsx'
     google_drive_filename: str = 'bowielist'
 
     def _download_list(self) -> None:
         """Download a list."""
-        logger.debug(f"Downloading {self.current_list.url} as {self.tempfile_name}")
+        logger.debug(f"Downloading {self.current_list.url}")
         r = requests.get(url=self.current_list.url)
-        with open(self.tempfile_name, 'wb') as f:
+        with open(self.current_list.filename, 'wb') as f:
             f.write(r.content)
 
     def _is_list_newer(self) -> bool:
@@ -78,7 +77,7 @@ class ListUpdater:
 
     def _upload_file(self) -> None:
         """Upload the sheet to Google drive."""
-        logger.debug(f"Uploading {self.tempfile_name} to Google Drive as '{self.google_drive_filename}'")
+        logger.debug(f"Uploading {self.current_list.filename} to Google Drive as '{self.google_drive_filename}'")
         if self.google_drive_list:
             if self._is_list_newer():
                 logger.info(
@@ -92,13 +91,13 @@ class ListUpdater:
             logger.info(f"Existing Google Drive file '{self.google_drive_filename}' not found, creating new from "
                         f"'{self.current_list.filename}'")
             bowielist = self.drive.CreateFile({'title': self.google_drive_filename})
-        bowielist.SetContentFile(filename=self.tempfile_name)
+        bowielist.SetContentFile(filename=self.current_list.filename)
         bowielist.Upload({'convert': True})
 
     def _delete_temp_xlsx(self):
         """Delete the temp xlsx file."""
-        logger.debug(f"Removing tempfile {self.tempfile_name}")
-        os.remove(self.tempfile_name)
+        logger.debug(f"Removing tempfile {self.current_list.filename}")
+        os.remove(self.current_list.filename)
 
     def run(self):
         """Download Bowie-list. If newer than what is on Google Drive upload it there, overwriting the existing file."""

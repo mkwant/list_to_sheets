@@ -3,6 +3,9 @@ FROM python:3.12
 # Set the Python path
 ENV PYTHONPATH /app
 
+# Set timezone
+ENV TZ Europe/Amsterdam
+
 # Upgrade pip
 RUN pip install --upgrade pip
 
