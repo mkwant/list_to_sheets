@@ -134,39 +134,41 @@ def _google_drive_login() -> GoogleDrive:
     return drive
 
 
-def get_google_drive_list(drive: GoogleDrive, google_drive_filename: str = 'bowielist') -> GoogleDriveItem | None:
-    """Get the Bowie list as found on Google Drive."""
+def get_google_drive_item(drive: GoogleDrive, google_drive_filename: str) -> GoogleDriveItem | None:
+    """Get the item as found on Google Drive."""
     search_result = drive.ListFile({'q': f"title='{google_drive_filename}' and trashed=false"}).GetList()
     if not search_result:
         return None
     gd_id = search_result[0]['id']
     gd_last_updated = date_parser.parse(search_result[0]['modifiedDate']).astimezone()
-    gd_bowielist = GoogleDriveItem(id=gd_id, last_modified=gd_last_updated, filename=google_drive_filename)
-    logger.debug(f"List currently on Google Drive: {gd_bowielist}")
-    return gd_bowielist
+    gd_item = GoogleDriveItem(id=gd_id, last_modified=gd_last_updated, filename=google_drive_filename)
+    logger.debug(f"Item currently on Google Drive: {gd_item}")
+    return gd_item
 
 
-def get_current_list(url: str) -> CurrentItem:  # noqa
-    """Get the current Bowie list as found online."""
-    logger.debug(f"Retrieving latest list from {url}")
+def get_current_item(url: str, item_filename_contains: str) -> CurrentItem:  # noqa
+    """Get the current item as found online."""
+    logger.debug(f"Retrieving latest item from {url}")
+
+    # Parsing the directory listing
     df = pd.read_html(url)[0]
     df = df[df['Name'].notna()]
-    df = df.loc[df["Name"].str.contains('bowielist')]
+    df = df.loc[df["Name"].str.contains(item_filename_contains)]
     df = df.sort_values(by=['Last modified'], ascending=False)
-    latest_list_row = df.iloc(0)[0]
-    url = f"{url}{latest_list_row['Name']}"
-    last_modified = date_parser.parse((latest_list_row['Last modified'])).astimezone()
-    current_list = CurrentItem(url=url, last_modified=last_modified)
-    logger.debug(f"Newest list found: {current_list}")
-    return current_list
+    latest_item_row = df.iloc(0)[0]
+    url = f"{url}{latest_item_row['Name']}"
+    last_modified = date_parser.parse((latest_item_row['Last modified'])).astimezone()
+    current_item = CurrentItem(url=url, last_modified=last_modified)
+    logger.debug(f"Newest item found: {current_item}")
+    return current_item
 
 
 def main():
     drive = _google_drive_login()
 
     lu = ListUpdater(
-        current_item=get_current_list(url=os.getenv('LIST_LOCATION')),
-        google_drive_item=get_google_drive_list(drive=drive),
+        current_item=get_current_item(url=os.getenv('LIST_LOCATION'), item_filename_contains='bowielist'),
+        google_drive_item=get_google_drive_item(drive=drive, google_drive_filename='bowielist'),
         drive=drive
     )
 
