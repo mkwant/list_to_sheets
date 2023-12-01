@@ -158,6 +158,8 @@ def get_current_item(url: str, item_filename_contains: str) -> CurrentItem:  # n
     latest_item_row = df.iloc(0)[0]
     url = f"{url}{latest_item_row['Name']}"
     last_modified = date_parser.parse((latest_item_row['Last modified'])).astimezone()
+
+    # Instantiating class
     current_item = CurrentItem(url=url, last_modified=last_modified)
     logger.debug(f"Newest item found: {current_item}")
     return current_item
