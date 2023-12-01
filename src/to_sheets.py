@@ -40,8 +40,8 @@ def setup_logging(log_location: Path, log_level: str) -> None:
 
 
 @dataclass
-class CurrentBowieList:
-    """The current Bowie list as found online."""
+class CurrentItem:
+    """The current item as found online."""
     url: str
     last_modified: datetime
     filename: str = None
@@ -51,53 +51,53 @@ class CurrentBowieList:
 
 
 @dataclass
-class GoogleDriveBowieList:
-    """The Bowie list as found on Google Drive."""
+class GoogleDriveItem:
+    """The item as found on Google Drive."""
     id: str
     last_modified: datetime
+    filename: str
 
 
 @dataclass
 class ListUpdater:
-    """Class to update a list."""
-    google_drive_list: GoogleDriveBowieList
-    current_list: CurrentBowieList
+    """Class to download a file from a weblocation and upload it to Google sheets if newer than the copy there."""
+    google_drive_item: GoogleDriveItem
+    current_item: CurrentItem
     drive: GoogleDrive
-    google_drive_filename: str = 'bowielist'
 
     def _download_list(self) -> None:
         """Download a list."""
-        logger.debug(f"Downloading {self.current_list.url}")
-        r = requests.get(url=self.current_list.url)
-        with open(self.current_list.filename, 'wb') as f:
+        logger.debug(f"Downloading {self.current_item.url}")
+        r = requests.get(url=self.current_item.url)
+        with open(self.current_item.filename, 'wb') as f:
             f.write(r.content)
 
     def _is_list_newer(self) -> bool:
-        return self.current_list.last_modified > self.google_drive_list.last_modified
+        return self.current_item.last_modified > self.google_drive_item.last_modified
 
     def _upload_file(self) -> None:
         """Upload the sheet to Google drive."""
-        logger.debug(f"Uploading {self.current_list.filename} to Google Drive as '{self.google_drive_filename}'")
-        if self.google_drive_list:
+        logger.debug(f"Uploading {self.current_item.filename} to Google Drive as '{self.google_drive_item.filename}'")
+        if self.google_drive_item:
             if self._is_list_newer():
                 logger.info(
-                    f"Existing Google Drive file '{self.google_drive_filename}' found ({self.google_drive_list.id}), "
-                    f"overwriting with newer file '{self.current_list.filename}'.")
-                bowielist = self.drive.CreateFile({'id': self.google_drive_list.id})
+                    f"Existing Google Drive file '{self.google_drive_item.filename}' found "
+                    f"({self.google_drive_item.id}), overwriting with newer file '{self.current_item.filename}'.")
+                bowielist = self.drive.CreateFile({'id': self.google_drive_item.id})
             else:
                 logger.info(f"Latest list already uploaded, exiting.")
                 return
         else:
-            logger.info(f"Existing Google Drive file '{self.google_drive_filename}' not found, creating new from "
-                        f"'{self.current_list.filename}'")
-            bowielist = self.drive.CreateFile({'title': self.google_drive_filename})
-        bowielist.SetContentFile(filename=self.current_list.filename)
+            logger.info(f"Existing Google Drive file '{self.google_drive_item.filename}' not found, creating new from "
+                        f"'{self.current_item.filename}'")
+            bowielist = self.drive.CreateFile({'title': self.google_drive_item.filename})
+        bowielist.SetContentFile(filename=self.current_item.filename)
         bowielist.Upload({'convert': True})
 
     def _delete_temp_xlsx(self):
         """Delete the temp xlsx file."""
-        logger.debug(f"Removing tempfile {self.current_list.filename}")
-        os.remove(self.current_list.filename)
+        logger.debug(f"Removing tempfile {self.current_item.filename}")
+        os.remove(self.current_item.filename)
 
     def run(self):
         """Download Bowie-list. If newer than what is on Google Drive upload it there, overwriting the existing file."""
@@ -134,19 +134,19 @@ def _google_drive_login() -> GoogleDrive:
     return drive
 
 
-def get_google_drive_list(drive: GoogleDrive, google_drive_filename: str = 'bowielist') -> GoogleDriveBowieList | None:
+def get_google_drive_list(drive: GoogleDrive, google_drive_filename: str = 'bowielist') -> GoogleDriveItem | None:
     """Get the Bowie list as found on Google Drive."""
     search_result = drive.ListFile({'q': f"title='{google_drive_filename}' and trashed=false"}).GetList()
     if not search_result:
         return None
     gd_id = search_result[0]['id']
     gd_last_updated = date_parser.parse(search_result[0]['modifiedDate']).astimezone()
-    gd_bowielist = GoogleDriveBowieList(id=gd_id, last_modified=gd_last_updated)
+    gd_bowielist = GoogleDriveItem(id=gd_id, last_modified=gd_last_updated, filename=google_drive_filename)
     logger.debug(f"List currently on Google Drive: {gd_bowielist}")
     return gd_bowielist
 
 
-def get_current_list(url: str) -> CurrentBowieList:  # noqa
+def get_current_list(url: str) -> CurrentItem:  # noqa
     """Get the current Bowie list as found online."""
     logger.debug(f"Retrieving latest list from {url}")
     df = pd.read_html(url)[0]
@@ -156,7 +156,7 @@ def get_current_list(url: str) -> CurrentBowieList:  # noqa
     latest_list_row = df.iloc(0)[0]
     url = f"{url}{latest_list_row['Name']}"
     last_modified = date_parser.parse((latest_list_row['Last modified'])).astimezone()
-    current_list = CurrentBowieList(url=url, last_modified=last_modified)
+    current_list = CurrentItem(url=url, last_modified=last_modified)
     logger.debug(f"Newest list found: {current_list}")
     return current_list
 
@@ -165,8 +165,8 @@ def main():
     drive = _google_drive_login()
 
     lu = ListUpdater(
-        current_list=get_current_list(url=os.getenv('LIST_LOCATION')),
-        google_drive_list=get_google_drive_list(drive=drive),
+        current_item=get_current_list(url=os.getenv('LIST_LOCATION')),
+        google_drive_item=get_google_drive_list(drive=drive),
         drive=drive
     )
 
