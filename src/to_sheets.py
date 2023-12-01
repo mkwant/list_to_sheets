@@ -83,16 +83,16 @@ class ListUpdater:
                 logger.info(
                     f"Existing Google Drive file '{self.google_drive_item.filename}' found "
                     f"({self.google_drive_item.id}), overwriting with newer file '{self.current_item.filename}'.")
-                bowielist = self.drive.CreateFile({'id': self.google_drive_item.id})
+                drive_item = self.drive.CreateFile({'id': self.google_drive_item.id})
             else:
                 logger.info(f"Latest list already uploaded, exiting.")
                 return
         else:
             logger.info(f"Existing Google Drive file '{self.google_drive_item.filename}' not found, creating new from "
                         f"'{self.current_item.filename}'")
-            bowielist = self.drive.CreateFile({'title': self.google_drive_item.filename})
-        bowielist.SetContentFile(filename=self.current_item.filename)
-        bowielist.Upload({'convert': True})
+            drive_item = self.drive.CreateFile({'title': self.google_drive_item.filename})
+        drive_item.SetContentFile(filename=self.current_item.filename)
+        drive_item.Upload({'convert': True})
 
     def _delete_temp_xlsx(self):
         """Delete the temp xlsx file."""
@@ -100,7 +100,7 @@ class ListUpdater:
         os.remove(self.current_item.filename)
 
     def run(self):
-        """Download Bowie-list. If newer than what is on Google Drive upload it there, overwriting the existing file."""
+        """Download item. If newer than what is on Google Drive upload it there, overwriting the existing file."""
         self._download_list()
         self._upload_file()
         self._delete_temp_xlsx()
