@@ -1,0 +1,6 @@
+.env
+venv
+*.xlsx
+*.log
+src/mycreds.json
+src/client_secrets.json
