@@ -2,5 +2,5 @@
 venv
 *.xlsx
 *.log
-src/mycreds.json
-src/client_secrets.json
+#mycreds.json
+#client_secrets.json

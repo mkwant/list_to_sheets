@@ -16,5 +16,8 @@ RUN pip install -r requirements.txt
 # Copy the source code
 COPY src/ src/
 
+WORKDIR /app/src
+
 # Set the entrypoint and default command
-ENTRYPOINT ["python", "src/to_sheets.py"]
+ENTRYPOINT ["python", "to_sheets.py"]
+#ENTRYPOINT ["bash"]
