@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Iterable
 
 import dotenv
 import pandas as pd
@@ -148,16 +149,18 @@ def get_google_drive_item(drive: GoogleDrive, google_drive_filename: str) -> Goo
     return gd_item
 
 
-def get_current_item(url: str, item_filename_contains: str) -> CurrentItem:  # noqa
+def get_current_item(url: str, item_filename_contains: str) -> CurrentItem:
     """Get the current item as found online."""
     logger.debug(f"Retrieving latest item from {url}")
 
     # Parsing the directory listing
-    df = pd.read_html(url)[0]
-    # TODO df = pd.read_html(url, extract_links='body')[0]
-    # TODO to get links from url
+    df = pd.read_html(url, extract_links='body')[0]
     df = df[df['Name'].notna()]
-    df = df.loc[df["Name"].str.contains(item_filename_contains)]
+    _, df['Name'] = zip(*df['Name'])
+    df['Last modified'], _ = zip(*df['Last modified'])
+    df = df[df['Name'].notna()]
+
+    df = df.loc[df['Name'].str.contains(item_filename_contains)]
     df = df.sort_values(by=['Last modified'][0], ascending=False)
     latest_item_row = df.iloc(0)[0]
     url = f"{url}{latest_item_row['Name']}"
@@ -173,14 +176,25 @@ def main():
     drive = _google_drive_login()
 
     lu = ListUpdater(
-        current_item=get_current_item(url=os.getenv('LIST_LOCATION'), item_filename_contains='bowielist'),
-        google_drive_item=get_google_drive_item(drive=drive, google_drive_filename='bowielist'),
+        current_item=get_current_item(url=os.getenv('LIST_LOCATION'), item_filename_contains='WANTLIST'),
+        google_drive_item=get_google_drive_item(drive=drive, google_drive_filename='wantlist'),
         drive=drive
     )
 
     lu.run()
 
 
+def test():
+    url = os.getenv('LIST_LOCATION')
+    df = pd.read_html(url, extract_links='body')[0]
+    df = df[df['Name'].notna()]
+    _, df['Name'] = zip(*df['Name'])
+    df['Last modified'], _ = zip(*df['Last modified'])
+
+    print(df)
+
+
 if __name__ == '__main__':
     setup_logging(log_location=Path('bowielist.log'), log_level=os.getenv('LOG_LEVEL'))
     main()
+    # test()
