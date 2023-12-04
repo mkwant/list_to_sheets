@@ -53,8 +53,8 @@ class CurrentItem:
 @dataclass
 class GoogleDriveItem:
     """The item as found on Google Drive."""
-    id: str
-    last_modified: datetime
+    id: str | None
+    last_modified: datetime | None
     filename: str
 
 
@@ -78,15 +78,12 @@ class ListUpdater:
     def _upload_file(self) -> None:
         """Upload the sheet to Google drive."""
         logger.debug(f"Uploading {self.current_item.filename} to Google Drive as '{self.google_drive_item.filename}'")
-        if self.google_drive_item:
-            if self._is_list_newer():
-                logger.info(
-                    f"Existing Google Drive file '{self.google_drive_item.filename}' found "
-                    f"({self.google_drive_item.id}), overwriting with newer file '{self.current_item.filename}'.")
-                drive_item = self.drive.CreateFile({'id': self.google_drive_item.id})
-            else:
-                logger.info(f"Latest list already uploaded, exiting.")
-                return
+        if self.google_drive_item.id:
+            logger.info(
+                f"Existing Google Drive file '{self.google_drive_item.filename}' found "
+                f"({self.google_drive_item.id}), overwriting with newer file '{self.current_item.filename}'.")
+            drive_item = self.drive.CreateFile({'id': self.google_drive_item.id})
+
         else:
             logger.info(f"Existing Google Drive file '{self.google_drive_item.filename}' not found, creating new from "
                         f"'{self.current_item.filename}'")
@@ -101,6 +98,9 @@ class ListUpdater:
 
     def run(self):
         """Download item. If newer than what is on Google Drive upload it there, overwriting the existing file."""
+        if not self._is_list_newer():
+            logger.info(f"Latest list already uploaded, exiting.")
+            return
         self._download_list()
         self._upload_file()
         self._delete_temp_xlsx()
@@ -138,9 +138,11 @@ def get_google_drive_item(drive: GoogleDrive, google_drive_filename: str) -> Goo
     """Get the item as found on Google Drive."""
     search_result = drive.ListFile({'q': f"title='{google_drive_filename}' and trashed=false"}).GetList()
     if not search_result:
-        return None
-    gd_id = search_result[0]['id']
-    gd_last_updated = date_parser.parse(search_result[0]['modifiedDate']).astimezone()
+        gd_id = None
+        gd_last_updated = date_parser.parse('1971-01-01 0:00').astimezone()
+    else:
+        gd_id = search_result[0]['id']
+        gd_last_updated = date_parser.parse(search_result[0]['modifiedDate']).astimezone()
     gd_item = GoogleDriveItem(id=gd_id, last_modified=gd_last_updated, filename=google_drive_filename)
     logger.debug(f"Item currently on Google Drive: {gd_item}")
     return gd_item
@@ -152,9 +154,11 @@ def get_current_item(url: str, item_filename_contains: str) -> CurrentItem:  # n
 
     # Parsing the directory listing
     df = pd.read_html(url)[0]
+    # TODO df = pd.read_html(url, extract_links='body')[0]
+    # TODO to get links from url
     df = df[df['Name'].notna()]
     df = df.loc[df["Name"].str.contains(item_filename_contains)]
-    df = df.sort_values(by=['Last modified'], ascending=False)
+    df = df.sort_values(by=['Last modified'][0], ascending=False)
     latest_item_row = df.iloc(0)[0]
     url = f"{url}{latest_item_row['Name']}"
     last_modified = date_parser.parse((latest_item_row['Last modified'])).astimezone()
