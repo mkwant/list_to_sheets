@@ -101,7 +101,7 @@ class ListUpdater:
     def run(self):
         """Download item. If newer than what is on Google Drive upload it there, overwriting the existing file."""
         if not self._is_list_newer():
-            logger.info(f"Latest list already uploaded, exiting.")
+            logger.info(f"Latest item already uploaded, exiting.")
             return
         self._download_list()
         self._upload_file()
