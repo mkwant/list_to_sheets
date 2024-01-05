@@ -74,7 +74,7 @@ class ListUpdater:
             f.write(r.content)
 
     def _is_list_newer(self) -> bool:
-.        """Compare lists to see if downloaded list is newer than Google Drive list"""
+        """Compare lists to see if downloaded list is newer than Google Drive list"""
         return self.current_item.last_modified > self.google_drive_item.last_modified
 
     def _upload_file(self) -> None:
