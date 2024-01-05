@@ -25,5 +25,5 @@ COPY src/ src/
 WORKDIR /app/src
 
 # Set the entrypoint and default command
-#ENTRYPOINT ["python", "to_sheets.py"]
-ENTRYPOINT ["bash"]
+ENTRYPOINT ["python", "to_sheets.py"]
+#ENTRYPOINT ["bash"]
