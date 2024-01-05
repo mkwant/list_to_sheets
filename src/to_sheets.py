@@ -4,11 +4,12 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable
+from typing import Annotated
 
 import dotenv
 import pandas as pd
 import requests
+import typer
 from dateutil import parser as date_parser
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -21,6 +22,12 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 # Reading environment variables
 dotenv.load_dotenv()
+
+# Initializing classes
+app = typer.Typer(add_completion=False,
+                  no_args_is_help=True,
+                  pretty_exceptions_show_locals=False,
+                  help=f"Download files from {os.getenv('LIST_LOCATION')}, upload to Google Drive.")
 
 
 def setup_logging(log_location: Path, log_level: str) -> None:
@@ -173,12 +180,19 @@ def get_current_item(url: str, item_filename_contains: str) -> CurrentItem:
     return current_item
 
 
-def main():
+@app.command(no_args_is_help=True)
+def main(
+        item_filename_contains: Annotated[str, typer.Option(
+            case_sensitive=False,
+            help=f"A partial filename from {os.getenv('LIST_LOCATION')}.")],
+        google_drive_filename: Annotated[str, typer.Option(help='The filename on Google Drive')]
+):
+    """Download files from 'LIST_LOCATION' as configured in env var, upload to Google Drive."""
     drive = _google_drive_login()
 
     lu = ListUpdater(
-        current_item=get_current_item(url=os.getenv('LIST_LOCATION'), item_filename_contains='bowielist'),
-        google_drive_item=get_google_drive_item(drive=drive, google_drive_filename='bowielist'),
+        current_item=get_current_item(url=os.getenv('LIST_LOCATION'), item_filename_contains=item_filename_contains),
+        google_drive_item=get_google_drive_item(drive=drive, google_drive_filename=google_drive_filename),
         drive=drive
     )
 
@@ -187,4 +201,5 @@ def main():
 
 if __name__ == '__main__':
     setup_logging(log_location=Path('/log/list_to_sheets.log'), log_level=os.getenv('LOG_LEVEL'))
-    main()
+    # main()
+    app()
