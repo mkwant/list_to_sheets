@@ -171,7 +171,7 @@ def get_current_item(url: str, item_filename_contains: str) -> CurrentItem:
     df = df.loc[df['Name'].str.contains(item_filename_contains)]
     df = df.sort_values(by=['Last modified'][0], ascending=False)
     latest_item_row = df.iloc(0)[0]
-    url = f"{url}{latest_item_row['Name']}"
+    url = f"{url}/{latest_item_row['Name']}"
     last_modified = date_parser.parse((latest_item_row['Last modified'])).astimezone()
 
     # Instantiating class
