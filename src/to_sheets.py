@@ -74,6 +74,7 @@ class ListUpdater:
             f.write(r.content)
 
     def _is_list_newer(self) -> bool:
+.        """Compare lists to see if downloaded list is newer than Google Drive list"""
         return self.current_item.last_modified > self.google_drive_item.last_modified
 
     def _upload_file(self) -> None:
@@ -176,25 +177,14 @@ def main():
     drive = _google_drive_login()
 
     lu = ListUpdater(
-        current_item=get_current_item(url=os.getenv('LIST_LOCATION'), item_filename_contains='WANTLIST'),
-        google_drive_item=get_google_drive_item(drive=drive, google_drive_filename='wantlist'),
+        current_item=get_current_item(url=os.getenv('LIST_LOCATION'), item_filename_contains='bowielist'),
+        google_drive_item=get_google_drive_item(drive=drive, google_drive_filename='bowielist'),
         drive=drive
     )
 
     lu.run()
 
 
-def test():
-    url = os.getenv('LIST_LOCATION')
-    df = pd.read_html(url, extract_links='body')[0]
-    df = df[df['Name'].notna()]
-    _, df['Name'] = zip(*df['Name'])
-    df['Last modified'], _ = zip(*df['Last modified'])
-
-    print(df)
-
-
 if __name__ == '__main__':
     setup_logging(log_location=Path('bowielist.log'), log_level=os.getenv('LOG_LEVEL'))
     main()
-    # test()

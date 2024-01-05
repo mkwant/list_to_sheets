@@ -3,5 +3,5 @@ venv
 /src/Output
 /src/*.log
 /src/*.xlsx
-#mycreds.json
-#client_secrets.json
+**mycreds.json
+**client_secrets.json
