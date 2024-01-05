@@ -201,5 +201,4 @@ def main(
 
 if __name__ == '__main__':
     setup_logging(log_location=Path('/log/list_to_sheets.log'), log_level=os.getenv('LOG_LEVEL'))
-    # main()
     app()
