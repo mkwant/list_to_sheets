@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.12-slim
 
 # Set the Python path
 ENV PYTHONPATH /app
@@ -8,6 +8,9 @@ ENV TERM xterm-256color
 
 # Set timezone
 ENV TZ Europe/Amsterdam
+
+# Ignore pip root error warnings
+ENV PIP_ROOT_USER_ACTION=ignore
 
 # Upgrade pip
 RUN pip install --upgrade pip
