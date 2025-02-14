@@ -1,5 +1,8 @@
 FROM python:3.12-slim
 
+# Exclude from being updated by Watchtower
+LABEL com.centurylinklabs.watchtower.enable="false"
+
 # Set the Python path
 ENV PYTHONPATH=/app
 
