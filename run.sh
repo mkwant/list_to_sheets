@@ -2,7 +2,8 @@
 arguments=( "$@" )
 
 cd /var/lib/list_to_sheets || exit
-/bin/docker run --rm -t \
+/bin/docker run --rm -t --quiet \
+            --pull always \
             --env-file .env \
             -v /var/log/list_to_sheets:/log \
             -v "${PWD}"/client_secrets.json:/app/src/client_secrets.json \
